@@ -15,9 +15,12 @@ async function callGemini(prompt: string): Promise<string | null> {
   }
 
   try {
-    const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    const res = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -787,9 +790,12 @@ export const checkAvailability = action({
     }
 
     try {
-      const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+      const res = await fetch(GEMINI_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body: JSON.stringify({
           contents: [{ parts: [{ text: "Say OK" }] }],
           generationConfig: { maxOutputTokens: 10 },
