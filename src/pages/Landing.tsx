@@ -67,7 +67,7 @@ export default function Landing() {
             to="/auth"
             className="px-4 py-2 rounded-lg bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-400 transition-colors"
           >
-            Log In
+            Sign In
           </Link>
           
         </div>
@@ -100,7 +100,7 @@ export default function Landing() {
               to="/auth"
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-cyan-500 text-white text-sm font-medium hover:bg-cyan-400 transition-colors"
             >
-              Log In
+              Sign In
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
