@@ -47,6 +47,7 @@ CrimeNet is a full-stack web application designed to help UP Police investigator
 - **Dynamic Dashboard** — Real-time statistics computed from database
 - **Investigation Management** — Create, edit, track investigations with status/priority
 - **Intelligence Upload** — Submit text for AI-powered entity and relationship extraction
+- **Intelligence Document Upload** - Upload PDF, DOCX, TXT, CSV, and JSON intelligence files. CrimeNet extracts the text from uploaded documents and sends it through the AI pipeline for entity and relationship extraction.
 - **Entity Explorer** — Search across all persons, organizations, locations, vehicles, phones, cases, events
 - **Criminal Network Graph** — Interactive Cytoscape.js visualization with zoom, pan, node selection, type filtering
 - **Relationship Explorer** — Searchable/filterable relationship table with pagination
@@ -61,6 +62,8 @@ CrimeNet is a full-stack web application designed to help UP Police investigator
 - **Closeness Centrality** — Average shortest path distance
 - **PageRank / Influence Score** — Structurally important entities
 - **Community Detection** — Connected component clustering
+
+### 
 
 ### AI Analysis Pipeline
 ```
@@ -155,6 +158,7 @@ Authorized Email Check
 | Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
 | Graph Visualization | Cytoscape.js |
 | Charts | Recharts |
+| text extraction | pdfjs-dist, mammoth | 
 | Animations | Framer Motion |
 | Backend | Convex |
 | Database | Convex Database |
@@ -162,12 +166,12 @@ Authorized Email Check
 | Authentication Method | Email + Password |
 | AI | Google Gemini API |
 | Icons | Lucide React |
-| Package Manager | Bun |
+| Package Manager | npm |
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js / Bun
+- Node.js / npm
 - Convex account (free tier works)
 
 ### Environment Variables
