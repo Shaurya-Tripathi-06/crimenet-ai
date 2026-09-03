@@ -3,8 +3,26 @@ import { action } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { api, internal } from "./_generated/api";
 
+const GEMINI_MODELS = [
+  {
+    name: "gemini-3.6-flash",
+    endpoint:
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+  },
+  {
+    name: "gemini-3.5-flash-lite",
+    endpoint:
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+  },
+];
+
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+
+const MAX_RETRIES_PER_MODEL = 2;
+
+const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 async function callGemini(prompt: string): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -14,40 +32,101 @@ async function callGemini(prompt: string): Promise<string | null> {
     return null;
   }
 
-  try {
-    const res = await fetch(GEMINI_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 8192,
-        },
-      }),
-    });
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+      try {
+        console.log(
+          `Gemini request: ${model.name}, attempt ${attempt + 1}/${MAX_RETRIES_PER_MODEL + 1}`
+        );
 
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(
-        "Gemini API error:",
-        res.status,
-        errorBody
-      );
-      return null;
+        const res = await fetch(model.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 8192,
+            },
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+
+          const response =
+            data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+          if (response) {
+            console.log(`Gemini response received from ${model.name}`);
+            return response;
+          }
+
+          console.warn(
+            `Gemini returned an empty response from ${model.name}`
+          );
+        } else {
+          const errorBody = await res.text();
+
+          console.error(
+            `Gemini API error (${model.name}):`,
+            res.status,
+            errorBody
+          );
+
+          // Retry only temporary/server-side failures.
+          const retryable =
+            res.status === 429 ||
+            res.status === 500 ||
+            res.status === 503 ||
+            res.status === 504;
+
+          if (!retryable) {
+            console.error(
+              `Non-retryable Gemini error ${res.status}.`
+            );
+            break;
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Gemini request failed (${model.name}, attempt ${
+            attempt + 1
+          }):`,
+          error
+        );
+
+        // Network errors are potentially temporary, so retry them.
+      }
+
+      // Don't wait after the final attempt for this model.
+      if (attempt < MAX_RETRIES_PER_MODEL) {
+        const delay = 1500 * Math.pow(2, attempt);
+
+        console.log(
+          `Retrying ${model.name} in ${delay}ms...`
+        );
+
+        await sleep(delay);
+      }
     }
 
-    const data = await res.json();
-
-    console.log("Gemini response received");
-
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-  } catch (error) {
-    console.error("Gemini request failed:", error);
-    return null;
+    // Primary model failed after retries.
+    // Move to the fallback model.
+    if (model !== GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
+      console.warn(
+        `${model.name} unavailable. Switching to fallback model...`
+      );
+    }
   }
+
+  console.error(
+    "All Gemini models failed after retries."
+  );
+
+  return null;
 }
 
 function extractJson(text: string): any {
@@ -190,7 +269,9 @@ Return ONLY the JSON array, no explanation.`;
           organizationType: e.organizationType || undefined,
           firNumber: e.firNumber || undefined,
           policeStation: e.policeStation || undefined,
-          sections: e.sections || undefined,
+          sections: Array.isArray(e.sections)
+            ? e.sections.join(", ")
+            : e.sections || undefined,
           eventLocation: e.eventLocation || undefined,
         }));
 
